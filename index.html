@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>BLE → API → Automation Architecture</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/black.css">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.esm.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/reveal.js-mermaid-plugin@2/dist/revealjs-mermaid-plugin.js"></script>
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <h2>BLE → API → Automation Overview</h2>
+          <p>Integrating BLE devices, AWS APIs, and Home Assistant automations.</p>
+        </section>
+
+        <section data-auto-animate>
+          <h3>API Implementation Options</h3>
+          <pre class="mermaid">
+%%{init: {"theme":"neutral"}}%%
+mindmap
+  root((BLE → API → Automations))
+    Device→Internet Path
+      Phone as Gateway
+        BLE GATT notify
+        App publishes to AWS IoT (MQTT)
+      BLE→IP Gateway
+        Publishes directly to AWS IoT
+    Cloud Core (AWS)
+      IoT Core (MQTT + Rules)
+      Lambda (event logic)
+      API Gateway (password REST)
+      DynamoDB (auth/logs)
+    AuthN/Z
+      Devices: X.509 certs
+      Users: Cognito JWT
+      Messages: Nonce/HMAC
+    Notify / Fan-out
+      Home Assistant
+      IFTTT
+      SNS / WebSocket
+      Camera Recording
+    Extras
+      HID shutter for iOS/Android
+      HA BLE integration
+          </pre>
+        </section>
+
+        <section>
+          <h3>Cloud Data Flow</h3>
+          <pre class="mermaid">
+%%{init: {"theme":"neutral"}}%%
+flowchart TD
+  A[BLE Button Press] --> B{Path}
+  B -->|Phone App| C[AWS IoT Core]
+  B -->|Gateway| C
+  C --> D[IoT Rule → Lambda]
+  D --> E{Action?}
+  E -->|Light| F[HA Webhook → light.turn_on]
+  E -->|Record Video| G[HA REST → camera.record]
+  E -->|Notify| H[SNS/Push/WS]
+          </pre>
+        </section>
+
+        <section>
+          <h3>Home Assistant Connection Options</h3>
+          <pre class="mermaid">
+%%{init: {"theme":"neutral"}}%%
+mindmap
+  root((Home Assistant Integration))
+    Webhook
+      Easy HTTPS POST
+      No token handling
+    REST API
+      Token from Secrets Manager
+    MQTT Bridge
+      HA triggers on topic
+    IFTTT Path
+      Lambda → IFTTT → Smart Device
+    Custom BLE Integration
+      Uses Bleak/Proxy
+      Reads/writes custom GATT
+          </pre>
+        </section>
+
+        <section>
+          <h3>Security Highlights</h3>
+          <ul>
+            <li>Devices use unique X.509 certs & scoped IoT policies.</li>
+            <li>Users authenticate via Cognito (JWT, MFA).</li>
+            <li>All secrets (HA tokens, webhook IDs) stored in AWS Secrets Manager.</li>
+            <li>Lambda functions run least-privilege IAM roles.</li>
+            <li>Replay protection: nonce + counter per device.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>End</h2>
+          <p>Deploy this with GitHub Pages:<br>
+             <code>https://username.github.io/my-slides</code></p>
+        </section>
+      </div>
+    </div>
+
+    <script type="module">
+      import Reveal from "https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.esm.js";
+      import RevealMermaid from "https://cdn.jsdelivr.net/npm/reveal.js-mermaid-plugin@2/dist/revealjs-mermaid-plugin.esm.js";
+      const deck = new Reveal({
+        hash: true,
+        plugins: [ RevealMermaid ]
+      });
+      deck.initialize({ slideNumber: true });
+    </script>
+  </body>
+</html>
